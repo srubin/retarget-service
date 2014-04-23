@@ -58,5 +58,11 @@ def upload_song():
     return flask.jsonify(**out)
 
 
+@app.route('/retarget/<music_id>/<float:duration>')
+@app.route('/retarget/<music_id>/<float:duration>/<start>/<end>')
+def retarget(music_id, duration, start=True, end=True):
+    pass
+
+
 if __name__ == "__main__":
     app.run(port=8080)
