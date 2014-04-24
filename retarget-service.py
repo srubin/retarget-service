@@ -7,7 +7,7 @@ from werkzeug import secure_filename
 import eyed3
 
 import radiotool.algorithms.constraints as rt_constraints
-from radiotool.algorithms import retarget
+from radiotool.algorithms import retarget as rt_retarget
 from radiotool.composer import Song
 
 app = Flask(__name__)
@@ -21,6 +21,9 @@ except:
 
 UPLOAD_PATH = 'static/uploads/'
 upload_path = os.path.join(APP_PATH, UPLOAD_PATH)
+
+RESULT_PATH = 'static/generated/'
+result_path = os.path.join(APP_PATH, RESULT_PATH)
 
 
 @app.route('/')
@@ -83,7 +86,39 @@ def retarget(filename, duration, start=True, end=True):
     except:
         abort(403)
 
-    return "woop" 
+    constraints = [
+        rt_constraints.TimbrePitchConstraint(
+            context=0, timbre_weight=1.5, chroma_weight=1.5),
+        rt_constraints.EnergyConstraint(penalty=0.5),
+        rt_constraints.MinimumLoopConstraint(8)
+    ]
+
+    extra = ''
+
+    if start:
+        constraints.append(
+            rt_constraints.StartAtStartConstraint(padding=0))
+        extra += 'Start'
+    if end:
+        constraints.append(
+            rt_constraints.EndAtEndConstraint(padding=4))
+        extra += 'End'
+
+    comp, _ = rt_retarget.retarget(
+        [song], duration, constraints=[constraints])
+
+    result_fn = "{}-{}-{}".format(
+        os.path.splitext(filename)[0],
+        str(duration),
+        extra)
+
+    result_full_fn = os.path.join(result_path, result_fn)
+
+    comp.export(filename=result_full_fn,
+                channels=song.channels,
+                filetype='mp3')
+
+    return result_full_fn + '.mp3'
 
 
 if __name__ == "__main__":
