@@ -1,12 +1,14 @@
 import sys
 import os.path
+import glob
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, abort
 from werkzeug import secure_filename
 import eyed3
 
 import radiotool.algorithms.constraints as rt_constraints
-import radiotool.algorithms.retarget as retarget
+from radiotool.algorithms import retarget
+from radiotool.composer import Song
 
 app = Flask(__name__)
 app.debug = True
@@ -17,17 +19,24 @@ try:
 except:
     APP_PATH = ''
 
+UPLOAD_PATH = 'static/uploads/'
+upload_path = os.path.join(APP_PATH, UPLOAD_PATH)
+
+
+@app.route('/')
+def ping():
+    return "pong"
+
 
 @app.route('/uploadTrack', methods=['POST'])
 def upload_song():
-    upload_path = os.path.join(APP_PATH, 'static/uploads/')
 
     # POST part
     f = request.files['song']
     file_path = f.filename.replace('\\', '/')
     basename = os.path.basename(file_path)
     filename = secure_filename(f.filename)
-    full_name = upload_path + filename
+    full_name = os.path.join(upload_path, filename)
     f.save(full_name)
 
     # get id3 tags
@@ -47,7 +56,7 @@ def upload_song():
             shell=True)
 
     out = {
-        "path": "uploads/" + filename,
+        "filename": filename,
         "name": basename.split('.')[0],
         "title": song_title,
         "artist": song_artist,
@@ -61,10 +70,20 @@ def upload_song():
     return jsonify(**out)
 
 
-@app.route('/retarget/<music_id>/<float:duration>')
-@app.route('/retarget/<music_id>/<float:duration>/<start>/<end>')
-def retarget(music_id, duration, start=True, end=True):
-    pass
+@app.route('/retarget/<filename>/<duration>')
+@app.route('/retarget/<filename>/<duration>/<start>/<end>')
+def retarget(filename, duration, start=True, end=True):
+    try:
+        duration = float(duration)
+    except:
+        abort(400)
+    song_path = os.path.join(upload_path, filename)
+    try:
+        song = Song(song_path)
+    except:
+        abort(403)
+
+    return "woop" 
 
 
 if __name__ == "__main__":
