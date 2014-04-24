@@ -1,11 +1,14 @@
-import sys.path
+import sys
+import os.path
 
-import flask.Flask
-import flask.jsonify
+from flask import Flask, jsonify
 from werkzeug import secure_filename
 import eyed3
 
-app = flask.Flask(__name__)
+import radiotool.algorithms.constraints as rt_constraints
+import radiotool.algorithms.retarget as retarget
+
+app = Flask(__name__)
 app.debug = True
 
 
@@ -17,7 +20,7 @@ except:
 
 @app.route('/uploadTrack', methods=['POST'])
 def upload_song():
-    upload_path = sys.path.join(APP_PATH, 'static/uploads/')
+    upload_path = os.path.join(APP_PATH, 'static/uploads/')
 
     # POST part
     f = request.files['song']
@@ -55,7 +58,7 @@ def upload_song():
     track = Track(wav_name, "track")
     out["dur"] = track.total_frames() / float(track.samplerate) * 1000.0
 
-    return flask.jsonify(**out)
+    return jsonify(**out)
 
 
 @app.route('/retarget/<music_id>/<float:duration>')
