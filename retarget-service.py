@@ -1,8 +1,9 @@
 import sys
 import os.path
 import glob
+import subprocess
 
-from flask import Flask, jsonify, abort
+from flask import Flask, jsonify, abort, request
 from werkzeug import secure_filename
 import eyed3
 
@@ -26,14 +27,13 @@ RESULT_PATH = 'static/generated/'
 result_path = os.path.join(APP_PATH, RESULT_PATH)
 
 
-@app.route('/')
+@app.route('/retarget-service/')
 def ping():
     return "pong"
 
 
-@app.route('/uploadTrack', methods=['POST'])
+@app.route('/retarget-service/uploadTrack', methods=['POST'])
 def upload_song():
-
     # POST part
     f = request.files['song']
     file_path = f.filename.replace('\\', '/')
@@ -59,30 +59,29 @@ def upload_song():
             shell=True)
 
     out = {
-        "filename": filename,
         "name": basename.split('.')[0],
         "title": song_title,
         "artist": song_artist,
-        "basename": os.path.splitext(filename)[0]
+        "filename": os.path.splitext(filename)[0] + '.wav'
     }
 
     # get length of song upload
-    track = Track(wav_name, "track")
-    out["dur"] = track.total_frames() / float(track.samplerate) * 1000.0
+    # track = Song(wav_name, "track")
+    # out["dur"] = track.duration_in_seconds
 
     return jsonify(**out)
 
 
-@app.route('/retarget/<filename>/<duration>')
-@app.route('/retarget/<filename>/<duration>/<start>/<end>')
-def retarget(filename, duration, start=True, end=True):
+@app.route('/retarget-service/retarget/<filename>/<duration>')
+@app.route('/retarget-service/retarget/<filename>/<duration>/<start>/<end>')
+def retarget(filename, duration, start="start", end="end"):
     try:
         duration = float(duration)
     except:
         abort(400)
     song_path = os.path.join(upload_path, filename)
     try:
-        song = Song(song_path)
+        song = Song(song_path, cache_dir="featurecache")
     except:
         abort(403)
 
@@ -95,11 +94,11 @@ def retarget(filename, duration, start=True, end=True):
 
     extra = ''
 
-    if start:
+    if start == "start":
         constraints.append(
             rt_constraints.StartAtStartConstraint(padding=0))
         extra += 'Start'
-    if end:
+    if end == "end":
         constraints.append(
             rt_constraints.EndAtEndConstraint(padding=4))
         extra += 'End'
