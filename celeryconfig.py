@@ -9,8 +9,12 @@ CELERY_RESULT_BACKEND = 'amqp'
 CELERY_TASK_RESULT_EXPIRES = 18000
 
 CELERYBEAT_SCHEDULE = {
-    'clean-generated-every-three-hours': {
+    'clean-generated-every-hour': {
         'task': 'retarget-service.clean_generated',
+        'schedule': timedelta(hours=1)
+    },
+    'clean-uploads-every-hour': {
+        'task': 'retarget-service.clean_uploads',
         'schedule': timedelta(hours=1)
     }
 }

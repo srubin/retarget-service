@@ -88,14 +88,14 @@ def upload_song():
 @app.route('/retarget-service/retarget/<filename>/<duration>/<start>/<end>')
 def retarget(filename, duration, start="start", end="end"):
     print "Retargeting track: {}".format(filename)
-    # session_key = 'analysis_{}'.format(filename)
-    # if session_key in session:
-    #     print "Getting {}".format(session_key)
-    #     from_serializable(session[session_key]).get()
-    #     session.pop(session_key, None)
-    # else:
-    #     print "Could not file celery task for {}".format(session_key)
-    # print "Proceeding to retarget"
+    session_key = 'analysis_{}'.format(filename)
+    if session_key in session:
+        print "Getting {}".format(session_key)
+        from_serializable(session[session_key]).get()
+        session.pop(session_key, None)
+    else:
+        print "Could not file celery task for {}".format(session_key)
+    print "Proceeding to retarget"
 
     try:
         duration = float(duration)
@@ -109,9 +109,10 @@ def retarget(filename, duration, start="start", end="end"):
 
     constraints = [
         rt_constraints.TimbrePitchConstraint(
-            context=0, timbre_weight=1.5, chroma_weight=1.5),
-        rt_constraints.EnergyConstraint(penalty=0.5),
-        rt_constraints.MinimumLoopConstraint(8)
+            context=0, timbre_weight=1.0, chroma_weight=1.0),
+        rt_constraints.EnergyConstraint(penalty=.5),
+        rt_constraints.MinimumLoopConstraint(8),
+        # rt_constraints.RandomJitterConstraint(),
     ]
 
     extra = ''
@@ -122,10 +123,10 @@ def retarget(filename, duration, start="start", end="end"):
         extra += 'Start'
     if end == "end":
         constraints.append(
-            rt_constraints.EndAtEndConstraint(padding=4))
+            rt_constraints.EndAtEndConstraint(padding=12))
         extra += 'End'
 
-    comp, _ = rt_retarget.retarget(
+    comp, info = rt_retarget.retarget(
         [song], duration, constraints=[constraints])
 
     result_fn = "{}-{}-{}".format(
@@ -138,6 +139,8 @@ def retarget(filename, duration, start="start", end="end"):
     comp.export(filename=result_full_fn,
                 channels=song.channels,
                 filetype='mp3')
+
+    print info["transitions"]
 
     return result_full_fn + '.mp3'
 
@@ -156,6 +159,19 @@ app.secret_key = "\xdf!\xf7\xb81'L\xbf\x95\x93"\
 def clean_generated():
     now = time.time()
     for f in glob.glob(RESULT_PATH + '*.mp3'):
+        if os.stat(f).st_mtime < now - 1 * 86400:
+            if os.path.isfile(f):
+                os.remove(f)
+
+
+@celery.task
+def clean_uploads():
+    now = time.time()
+    for f in glob.glob(UPLOAD_PATH + '*.mp3'):
+        if os.stat(f).st_mtime < now - 1 * 86400:
+            if os.path.isfile(f):
+                os.remove(f)
+    for f in glob.glob(UPLOAD_PATH + '*.wav'):
         if os.stat(f).st_mtime < now - 1 * 86400:
             if os.path.isfile(f):
                 os.remove(f)
