@@ -1,11 +1,15 @@
 import sys
 import os.path
+import os
 import glob
 import subprocess
+import time
 
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, session
 from werkzeug import secure_filename
 import eyed3
+from celery import Celery
+from celery.result import from_serializable
 
 import radiotool.algorithms.constraints as rt_constraints
 from radiotool.algorithms import retarget as rt_retarget
@@ -14,6 +18,9 @@ from radiotool.composer import Song
 app = Flask(__name__)
 app.debug = True
 
+celery = Celery('retarget-service')
+celery.config_from_object('celeryconfig')
+# celery.conf.update(app.config)
 
 try:
     from app_path import APP_PATH
@@ -34,6 +41,7 @@ def ping():
 
 @app.route('/retarget-service/uploadTrack', methods=['POST'])
 def upload_song():
+    print "Uploading track"
     # POST part
     f = request.files['song']
     file_path = f.filename.replace('\\', '/')
@@ -65,9 +73,13 @@ def upload_song():
         "filename": os.path.splitext(filename)[0] + '.wav'
     }
 
-    # get length of song upload
-    # track = Song(wav_name, "track")
-    # out["dur"] = track.duration_in_seconds
+    # run the analysis asynchronously using Celery
+    result = analyze_track.delay(
+        os.path.join(upload_path, out["filename"]))
+
+    session_key = 'analysis_{}'.format(out["filename"])
+
+    session[session_key] = result.serializable()
 
     return jsonify(**out)
 
@@ -75,6 +87,16 @@ def upload_song():
 @app.route('/retarget-service/retarget/<filename>/<duration>')
 @app.route('/retarget-service/retarget/<filename>/<duration>/<start>/<end>')
 def retarget(filename, duration, start="start", end="end"):
+    print "Retargeting track: {}".format(filename)
+    # session_key = 'analysis_{}'.format(filename)
+    # if session_key in session:
+    #     print "Getting {}".format(session_key)
+    #     from_serializable(session[session_key]).get()
+    #     session.pop(session_key, None)
+    # else:
+    #     print "Could not file celery task for {}".format(session_key)
+    # print "Proceeding to retarget"
+
     try:
         duration = float(duration)
     except:
@@ -118,6 +140,25 @@ def retarget(filename, duration, start="start", end="end"):
                 filetype='mp3')
 
     return result_full_fn + '.mp3'
+
+
+@celery.task
+def analyze_track(filename):
+    song = Song(filename, cache_dir="featurecache")
+    _ = song.analysis["beats"]
+    return True
+
+app.secret_key = "\xdf!\xf7\xb81'L\xbf\x95\x93"\
+    "\x9f\xdd_|\xb6\xf9\xb2\xf2[\x9e\xfd\xf5\xf3\xef"
+
+
+@celery.task
+def clean_generated():
+    now = time.time()
+    for f in glob.glob(RESULT_PATH + '*.mp3'):
+        if os.stat(f).st_mtime < now - 1 * 86400:
+            if os.path.isfile(f):
+                os.remove(f)
 
 
 if __name__ == "__main__":
