@@ -171,8 +171,8 @@ def retarget(filename, duration, start="start", end="end"):
 
     out = {
         "url": result_url + '.mp3',
-        "cost": total_nonzero_cost,
-        "transitions": [t.time for t in info["transitions"]]
+        "cost": round(total_nonzero_cost, 2),
+        "transitions": [round(t.time, 1) for t in info["transitions"]]
     }
 
     return jsonify(**out)
