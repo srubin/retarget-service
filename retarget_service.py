@@ -190,7 +190,7 @@ def retarget(filename, duration, start="start", end="end"):
         "transitions": [[round(t[0], 1), round(t[1], 2)] for t in transitions]
     }
 
-    print "non-1 volume:", N.where(info["result_volume"] != 1.0)
+    print "non-1 volume:", len(N.where(info["result_volume"] != 1.0)[0])
 
     return jsonify(**out)
 
