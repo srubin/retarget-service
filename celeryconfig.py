@@ -3,7 +3,7 @@ from datetime import timedelta
 ## Broker settings.
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 
-CELERY_IMPORTS = ('retarget-service')
+CELERY_IMPORTS = ('retarget_service')
 
 CELERY_RESULT_BACKEND = 'amqp'
 CELERY_TASK_RESULT_EXPIRES = 18000
