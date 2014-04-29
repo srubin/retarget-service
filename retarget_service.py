@@ -36,12 +36,12 @@ RESULT_PATH = 'static/generated/'
 result_path = os.path.join(APP_PATH, RESULT_PATH)
 
 
-@app.route('/retarget-service/')
+@app.route('/')
 def ping():
     return "pong"
 
 
-@app.route('/retarget-service/uploadTrack', methods=['POST'])
+@app.route('/uploadTrack', methods=['POST'])
 def upload_song():
     print "Uploading track"
     # POST part
@@ -86,8 +86,8 @@ def upload_song():
     return jsonify(**out)
 
 
-@app.route('/retarget-service/retarget/<filename>/<duration>')
-@app.route('/retarget-service/retarget/<filename>/<duration>/<start>/<end>')
+@app.route('/retarget/<filename>/<duration>')
+@app.route('/retarget/<filename>/<duration>/<start>/<end>')
 def retarget(filename, duration, start="start", end="end"):
     print "Retargeting track: {}".format(filename)
     session_key = 'analysis_{}'.format(filename)
