@@ -38,6 +38,11 @@ result_path = os.path.join(APP_PATH, RESULT_PATH)
 CACHE_DIR = 'featurecache/'
 cache_dir = os.path.join(APP_PATH, CACHE_DIR)
 
+try:
+    from app_path import APP_URL
+except:
+    APP_URL = ''
+
 
 @app.route('/')
 def ping():
@@ -153,7 +158,10 @@ def retarget(filename, duration, start="start", end="end"):
 
     print info["transitions"]
 
-    return result_full_fn + '.mp3'
+    result_url = os.path.join(APP_URL, RESULT_PATH)
+    result_url = os.path.join(result_url, result_fn)
+
+    return result_url + '.mp3'
 
 
 @celery.task
