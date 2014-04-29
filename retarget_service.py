@@ -162,17 +162,18 @@ def retarget(filename, duration, start="start", end="end"):
     result_url = os.path.join(result_url, result_fn)
 
     path_cost = info["path_cost"]
-    total_nonzero_cost = 0.0
-    total_nonzero_points = 0
+    total_nonzero_cost = []
+    total_nonzero_points = []
     for node in path_cost:
         if node > 0.0:
-            total_nonzero_cost += float(node.name)
-            total_nonzero_points += 1
+            total_nonzero_cost.append(float(node.name))
+            total_nonzero_points.append(float(node.time))
+
+    transitions = zip(total_nonzero_points, total_nonzero_points)
 
     out = {
         "url": result_url + '.mp3',
-        "cost": round(total_nonzero_cost, 2),
-        "transitions": [round(t.time, 1) for t in info["transitions"]]
+        "transitions": [[round(t[0], 1), round(t[1], 2)] for t in transitions]
     }
 
     return jsonify(**out)
