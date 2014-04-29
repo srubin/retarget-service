@@ -1,4 +1,6 @@
 import sys
+sys.path.append("/var/www/html/srubin/retargeting/retarget-service")
+
 import os.path
 import os
 import glob
