@@ -2,6 +2,7 @@ import sys
 sys.path.append("/var/www/html/srubin/retargeting/retarget-service")
 
 import os.path
+import uuid
 import os
 import glob
 import subprocess
@@ -154,10 +155,13 @@ def retarget(filename, duration, start="start", end="end"):
     comp, info = rt_retarget.retarget(
         [song], duration, constraints=[constraints])
 
-    result_fn = "{}-{}-{}".format(
+    uid = str(uuid.uuid4())
+
+    result_fn = "{}-{}-{}-{}".format(
         os.path.splitext(filename)[0],
         str(duration),
-        extra)
+        extra,
+        uid)
 
     result_full_fn = os.path.join(result_path, result_fn)
 
