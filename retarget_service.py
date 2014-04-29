@@ -161,7 +161,21 @@ def retarget(filename, duration, start="start", end="end"):
     result_url = os.path.join(APP_URL, RESULT_PATH)
     result_url = os.path.join(result_url, result_fn)
 
-    return result_url + '.mp3'
+    path_cost = info["path_cost"]
+    total_nonzero_cost = 0.0
+    total_nonzero_points = 0
+    for node in path_cost:
+        if node > 0.0:
+            total_nonzero_cost += node
+            total_nonzero_points += 1
+
+    out = {
+        "url": result_url + '.mp3',
+        "cost": total_nonzero_cost,
+        "transitions": len(info["transitions"])
+    }
+
+    return jsonify(**out)
 
 
 @celery.task
