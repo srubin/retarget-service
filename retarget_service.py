@@ -169,7 +169,7 @@ def retarget(filename, duration, start="start", end="end"):
             total_nonzero_cost.append(float(node.name))
             total_nonzero_points.append(float(node.time))
 
-    transitions = zip(total_nonzero_points, total_nonzero_points)
+    transitions = zip(total_nonzero_points, total_nonzero_cost)
 
     out = {
         "url": result_url + '.mp3',
