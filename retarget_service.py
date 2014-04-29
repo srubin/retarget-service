@@ -103,31 +103,34 @@ def upload_song():
 @app.route('/retarget/<filename>/<duration>/<start>/<end>')
 def retarget(filename, duration, start="start", end="end"):
     print "Retargeting track: {}".format(filename)
-    session_key = 'analysis_{}'.format(filename)
-    if session_key in session:
-        print "Getting {}".format(session_key)
-        task = from_serializable(session[session_key])
-        if task.ready():
-            task.forget()
-            session.clear()
-        else:
-            print "Waiting for task"
-            task.get()
-            task.forget()
-            session.clear()
-    else:
-        print "Could not file celery task for {}".format(session_key)
-    print "Proceeding to retarget"
 
-    try:
-        duration = float(duration)
-    except:
-        abort(400)
     song_path = os.path.join(upload_path, filename)
     try:
         song = Song(song_path, cache_dir=cache_dir)
     except:
         abort(403)
+
+    if not song.features_cached():
+        session_key = 'analysis_{}'.format(filename)
+        if session_key in session:
+            print "Getting {}".format(session_key)
+            task = from_serializable(session[session_key])
+            if task.ready():
+                task.forget()
+                session.clear()
+            else:
+                print "Waiting for task"
+                task.get()
+                task.forget()
+                session.clear()
+        else:
+            print "Could not file celery task for {}".format(session_key)
+        print "Proceeding to retarget"
+
+    try:
+        duration = float(duration)
+    except:
+        abort(400)
 
     constraints = [
         rt_constraints.TimbrePitchConstraint(
