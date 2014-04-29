@@ -35,6 +35,9 @@ upload_path = os.path.join(APP_PATH, UPLOAD_PATH)
 RESULT_PATH = 'static/generated/'
 result_path = os.path.join(APP_PATH, RESULT_PATH)
 
+CACHE_DIR = 'featurecache/'
+cache_dir = os.path.join(APP_PATH, CACHE_DIR)
+
 
 @app.route('/')
 def ping():
@@ -108,7 +111,7 @@ def retarget(filename, duration, start="start", end="end"):
         abort(400)
     song_path = os.path.join(upload_path, filename)
     try:
-        song = Song(song_path, cache_dir="featurecache")
+        song = Song(song_path, cache_dir=cache_dir)
     except:
         abort(403)
 
@@ -152,7 +155,7 @@ def retarget(filename, duration, start="start", end="end"):
 
 @celery.task
 def analyze_track(filename):
-    song = Song(filename, cache_dir="featurecache")
+    song = Song(filename, cache_dir=cache_dir)
     _ = song.analysis["beats"]
     return True
 
