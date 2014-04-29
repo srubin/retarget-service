@@ -87,13 +87,14 @@ def upload_song():
         "filename": os.path.splitext(filename)[0] + '.wav'
     }
 
-    # run the analysis asynchronously using Celery
-    result = analyze_track.delay(
-        os.path.join(upload_path, out["filename"]))
+    song_path = os.path.join(upload_path, out["filename"])
+    song = Song(song_path, cache_dir=cache_dir)
 
-    session_key = 'analysis_{}'.format(out["filename"])
-
-    session[session_key] = result.serializable()
+    if not song.features_cached():
+        # run the analysis asynchronously using Celery
+        result = analyze_track.delay(song_path)
+        session_key = 'analysis_{}'.format(out["filename"])
+        session[session_key] = result.serializable()
 
     return jsonify(**out)
 
