@@ -8,6 +8,7 @@ import glob
 import subprocess
 import time
 
+import numpy as N
 from flask import Flask, jsonify, abort, request, session
 from werkzeug import secure_filename
 from mutagen.easyid3 import EasyID3
@@ -188,6 +189,8 @@ def retarget(filename, duration, start="start", end="end"):
         "url": result_url + '.mp3',
         "transitions": [[round(t[0], 1), round(t[1], 2)] for t in transitions]
     }
+
+    print "non-1 volume:", N.where(info["result_volume"] != 1.0)
 
     return jsonify(**out)
 
