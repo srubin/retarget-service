@@ -165,7 +165,7 @@ def retarget(filename, duration, start="start", end="end"):
     total_nonzero_cost = []
     total_nonzero_points = []
     for node in path_cost:
-        if node > 0.0:
+        if float(node.name) > 0.0:
             total_nonzero_cost.append(float(node.name))
             total_nonzero_points.append(float(node.time))
 
