@@ -9,7 +9,7 @@ import time
 
 from flask import Flask, jsonify, abort, request, session
 from werkzeug import secure_filename
-import eyed3
+from mutagen.easyid3 import EasyID3
 from celery import Celery
 from celery.result import from_serializable
 
@@ -53,9 +53,12 @@ def upload_song():
     f.save(full_name)
 
     # get id3 tags
-    song = eyed3.load(full_name)
-    song_title = song.tag.title
-    song_artist = song.tag.artist
+    song = EasyID3(full_name)
+    try:
+        song_title = song["title"]
+    except:
+        song_title = "Track name"
+    # song_artist = song["artist"]
 
     wav_name = ".".join(full_name.split('.')[:-1]) + '.wav'
 
@@ -71,7 +74,7 @@ def upload_song():
     out = {
         "name": basename.split('.')[0],
         "title": song_title,
-        "artist": song_artist,
+        # "artist": song_artist,
         "filename": os.path.splitext(filename)[0] + '.wav'
     }
 
