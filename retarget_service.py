@@ -51,6 +51,7 @@ def ping():
 
 @app.route('/uploadTrack', methods=['POST'])
 def upload_song():
+    session.clear()
     print "Uploading track"
     # POST part
     f = request.files['song']
