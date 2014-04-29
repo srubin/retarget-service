@@ -105,10 +105,11 @@ def retarget(filename, duration, start="start", end="end"):
     if session_key in session:
         print "Getting {}".format(session_key)
         if from_serializable(session[session_key]).ready():
-            session.pop(session_key, None)
+            session.clear()
         else:
+            print "Waiting for task"
             from_serializable(session[session_key]).get()
-            session.pop(session_key, None)
+            session.clear()
     else:
         print "Could not file celery task for {}".format(session_key)
     print "Proceeding to retarget"
