@@ -166,7 +166,7 @@ def retarget(filename, duration, start="start", end="end"):
     total_nonzero_points = 0
     for node in path_cost:
         if node > 0.0:
-            total_nonzero_cost += node
+            total_nonzero_cost += float(node.name)
             total_nonzero_points += 1
 
     out = {
