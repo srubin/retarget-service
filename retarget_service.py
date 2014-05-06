@@ -34,16 +34,21 @@ except:
 UPLOAD_PATH = 'static/uploads/'
 upload_path = os.path.join(APP_PATH, UPLOAD_PATH)
 
+STOCK_PATH = 'static/stock/'
+stock_path = os.path.join(APP_PATH, STOCK_PATH)
+
 RESULT_PATH = 'static/generated/'
 result_path = os.path.join(APP_PATH, RESULT_PATH)
 
 CACHE_DIR = 'featurecache/'
 cache_dir = os.path.join(APP_PATH, CACHE_DIR)
 
+MOUNT_PATH = ''
 try:
     from app_path import APP_URL
 except:
     APP_URL = ''
+    MOUNT_PATH = '/retarget-service'
 
 
 @app.route('/')
@@ -51,7 +56,7 @@ def ping():
     return "pong"
 
 
-@app.route('/uploadTrack', methods=['POST'])
+@app.route(MOUNT_PATH + '/uploadTrack', methods=['POST'])
 def upload_song():
     session.clear()
     print "Uploading track"
@@ -101,12 +106,16 @@ def upload_song():
     return jsonify(**out)
 
 
-@app.route('/retarget/<filename>/<duration>')
-@app.route('/retarget/<filename>/<duration>/<start>/<end>')
-def retarget(filename, duration, start="start", end="end"):
+@app.route(MOUNT_PATH + '/retarget/<filename>/<source>/<duration>')
+@app.route(MOUNT_PATH + '/retarget/<filename>/<source>/<duration>/<start>/<end>')
+def retarget(filename, source, duration, start="start", end="end"):
     print "Retargeting track: {}".format(filename)
 
-    song_path = os.path.join(upload_path, filename)
+    if source == 'stock':
+        song_path = os.path.join(stock_path, filename)
+    else:
+        song_path = os.path.join(upload_path, filename)
+
     try:
         song = Song(song_path, cache_dir=cache_dir)
     except:
