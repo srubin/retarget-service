@@ -1,23 +1,23 @@
 import sys
 sys.path.append("/var/www/html/srubin/retargeting/retarget-service")
 
-import os.path
-import uuid
-import os
 import glob
+import os
+import os.path
 import subprocess
 import time
+import uuid
 
-import numpy as N
-from flask import Flask, jsonify, abort, request, session
-from werkzeug import secure_filename
-from mutagen.easyid3 import EasyID3
 from celery import Celery
 from celery.result import from_serializable
+from flask import Flask, jsonify, abort, request, session
+from mutagen.easyid3 import EasyID3
+from werkzeug import secure_filename
+import numpy as N
 
-import radiotool.algorithms.constraints as rt_constraints
 from radiotool.algorithms import retarget as rt_retarget
 from radiotool.composer import Song
+import radiotool.algorithms.constraints as rt_constraints
 
 app = Flask(__name__)
 app.debug = True
@@ -96,12 +96,7 @@ def upload_song():
 
     song_path = os.path.join(upload_path, out["filename"])
     song = Song(song_path, cache_dir=cache_dir)
-
-    if not song.features_cached():
-        # run the analysis asynchronously using Celery
-        result = analyze_track.delay(song_path)
-        session_key = 'analysis_{}'.format(out["filename"])
-        session[session_key] = result.serializable()
+    out["duration"] = song.duration_in_seconds,
 
     return jsonify(**out)
 
@@ -122,21 +117,8 @@ def retarget(filename, source, duration, start="start", end="end"):
         abort(403)
 
     if not song.features_cached():
-        session_key = 'analysis_{}'.format(filename)
-        if session_key in session:
-            print "Getting {}".format(session_key)
-            task = from_serializable(session[session_key])
-            if task.ready():
-                session.clear()
-            else:
-                print "Waiting for task"
-                if task.state != 'SUCCESS':
-                    print "task state: {}".format(task.state)
-                    task.get()
-                session.clear()
-        else:
-            print "Could not file celery task for {}".format(session_key)
-        print "Proceeding to retarget"
+        print "Analyzing track"
+        analyze_track(song_path)
 
     try:
         duration = float(duration)
@@ -148,7 +130,6 @@ def retarget(filename, source, duration, start="start", end="end"):
             context=0, timbre_weight=1.0, chroma_weight=1.0),
         rt_constraints.EnergyConstraint(penalty=.5),
         rt_constraints.MinimumLoopConstraint(8),
-        # rt_constraints.RandomJitterConstraint(),
     ]
 
     extra = ''
