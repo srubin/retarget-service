@@ -16,7 +16,7 @@ from werkzeug import secure_filename
 import numpy as N
 
 from radiotool.algorithms import retarget as rt_retarget
-from radiotool.composer import Song
+from radiotool.composer import Song, Segment, RawTrack
 import radiotool.algorithms.constraints as rt_constraints
 
 app = Flask(__name__)
@@ -144,7 +144,18 @@ def retarget(filename, source, duration, start="start", end="end"):
         extra += 'End'
 
     comp, info = rt_retarget.retarget(
-        [song], duration, constraints=[constraints])
+        [song], duration, constraints=[constraints],
+        fade_in_len=None, fade_out_len=None)
+
+    # force the new track to extend to the end of the song
+    if end == "end":
+        last_seg = sorted(
+            comp.segments,
+            key=lambda seg:
+            seg.comp_location_in_seconds + seg.duration_in_seconds
+        )[-1]
+        last_seg.duration_in_seconds = (
+            song.duration_in_seconds - last_seg.start_in_seconds)
 
     uid = str(uuid.uuid4())
 
@@ -155,6 +166,13 @@ def retarget(filename, source, duration, start="start", end="end"):
         uid)
 
     result_full_fn = os.path.join(result_path, result_fn)
+
+    # if end == "end":
+    #     frames = comp.build(channels=song.channels)
+    #     new_track = time_stretch(frames, song.samplerate, duration)
+    #     comp = Composition(channels=song.channels)
+    #     comp.add_segment(
+    #         Segment(new_track, 0.0, 0.0, new_track.duration_in_seconds))
 
     comp.export(filename=result_full_fn,
                 channels=song.channels,
@@ -181,6 +199,21 @@ def retarget(filename, source, duration, start="start", end="end"):
     }
 
     return jsonify(**out)
+
+
+# way too slow for this demo:
+
+# def time_stretch(frames, samplerate, target_duration):
+#     n_fft = 2048
+#     hop_length = n_fft / 4
+
+#     scale_factor = float(target_duration) / len(frames) / float(samplerate)
+
+#     D = librosa.stft(frames, n_fft=n_fft, hop_length=hop_length)
+#     D_stretch = librosa.phase_vocoder(
+#         D, scale_factor, hop_length=hop_length)
+#     y_stretch = librosa.istft(D_stretch, hop_length=hop_length)
+#     return RawTrack(y_stretch, samplerate=samplerate)
 
 
 @celery.task
